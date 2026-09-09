@@ -1,0 +1,1 @@
+A website I made to act as my online portfolio. I plan on adding more to it as time goes on, for example education and experience sections.
