@@ -561,6 +561,25 @@ main>section+section {
   transition: opacity .4s ease, transform .4s ease;
 }
 
+.terminal {
+  opacity: 0;
+  transform: scale(0.98);
+  transition: opacity .5s ease, transform .5s ease;
+}
+
+.terminal.in {
+  opacity: 1;
+  transform: scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .terminal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
 .toast.in {
   opacity: 1;
   transform: translateY(0);

@@ -1,6 +1,13 @@
 (function () {
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+    window.addEventListener('load', function () {
+        setTimeout(function () {
+            var t = document.querySelector('.terminal');
+            if (t) t.classList.add('in');
+        }, 3000);
+    });
+
     function tick() {
         var d = new Date();
         var h = String(d.getHours()).padStart(2, '0');
@@ -14,38 +21,50 @@
         return document.getElementById(id);
     });
     var btns = document.querySelectorAll('.ws-btn');
-    var io = new IntersectionObserver(function (entries) {
-        entries.forEach(function (entry) {
-            if (entry.isIntersecting) {
-                var idx = sections.indexOf(entry.target);
-                btns.forEach(function (b, i) { b.classList.toggle('active', i === idx); });
-            }
-        });
-    }, { rootMargin: '-40% 0px -55% 0px' });
-    window.addEventListener('scroll', function () {
-        var atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
-        if (atBottom) {
-            btns.forEach(function (b, i) { b.classList.toggle('active', i === sections.length - 1); });
-        }
-    });
-    sections.forEach(function (s) { if (s) io.observe(s); });
 
-    var toasts = document.querySelectorAll('.toast');
-    var tio = new IntersectionObserver(function (entries, obs) {
-        entries.forEach(function (entry, i) {
-            if (entry.isIntersecting) {
-                setTimeout(function () { entry.target.classList.add('in'); }, i * 90);
-                obs.unobserve(entry.target);
-            }
+    function updateActiveWorkspace() {
+        var refY = document.querySelector('.waybar').offsetHeight + 20;
+        var activeIndex = 0;
+        sections.forEach(function (s, i) {
+            if (!s) return;
+            var top = s.getBoundingClientRect().top;
+            if (top <= refY) activeIndex = i;
         });
-    }, { threshold: 0.3 });
-    toasts.forEach(function (t) { tio.observe(t); });
+        var atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+        if (atBottom) activeIndex = sections.length - 1;
+        btns.forEach(function (b, i) { b.classList.toggle('active', i === activeIndex); });
+    }
+    window.addEventListener('scroll', updateActiveWorkspace, { passive: true });
+    window.addEventListener('resize', updateActiveWorkspace);
+    updateActiveWorkspace();
+
+    function revealGroup(items, opts) {
+        opts = opts || {};
+        var io = new IntersectionObserver(function (entries, obs) {
+            entries.forEach(function (entry, i) {
+                if (entry.isIntersecting) {
+                    var delay = opts.stagger ? i * opts.stagger : 0;
+                    setTimeout(function () { entry.target.classList.add('in'); }, delay);
+                    obs.unobserve(entry.target);
+                }
+            });
+        }, { threshold: opts.threshold || 0.2 });
+        items.forEach(function (el) { io.observe(el); });
+    }
+
+    revealGroup(document.querySelectorAll('.sec-head'), { threshold: 0.4 });
+    revealGroup(document.querySelectorAll('.launcher'), { threshold: 0.15 });
+    revealGroup(document.querySelectorAll('.tile-layout .win'), { stagger: 100, threshold: 0.2 });
+    revealGroup(document.querySelectorAll('.toasts .toast'), { stagger: 90, threshold: 0.3 });
 
     var boot = document.getElementById('boot');
     if (reduce) {
         boot.remove();
+        var t0 = document.querySelector('.terminal');
+        if (t0) t0.classList.add('in');
         return;
     }
+
     var lines = [
         'initializing session...',
         'mounting ~/assets  [ok]',
@@ -66,6 +85,8 @@
     var skip = function () {
         boot.style.transition = 'opacity .35s ease';
         boot.style.opacity = 0;
+        var t = document.querySelector('.terminal');
+        if (t) t.classList.add('in');
         setTimeout(function () { boot.remove(); }, 360);
         window.removeEventListener('click', skip);
         window.removeEventListener('keydown', skip);
